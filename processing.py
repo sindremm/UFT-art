@@ -5,9 +5,10 @@ import numpy as np
 
 
 def get_img():
-    """Open a file dialog to select an image file."""
+    """Open a file dialog to select an image file with standard size."""
     root = tk.Tk()
     root.withdraw()
+    root.geometry("600x450")
     img_file = filedialog.askopenfilename(
         title="Select an image file",
         filetypes=[("Image files", "*.jpg *.jpeg *.png *.bmp *.gif *.tif *.tiff")]
@@ -23,8 +24,9 @@ def to_img(img_file):
 
 
 def show_img(name, img):
-    """Display an image in a window using PIL."""
-    Image.fromarray(img).show(title=name)
+    """Display an image in a window using PIL with standard size."""
+    img_pil = Image.fromarray(img)
+    img_pil.show(title=name)
 
 
 def add_to_clipboard(text):
@@ -141,6 +143,7 @@ def int_to_char(number):
 def to_utf(raw_img, pixelation):
     """
     Convert a pixelated image to a UTF-8 string representation.
+    Each character is duplicated to double the width of the output.
 
     Args:
         raw_img: Input grayscale image as numpy array
@@ -152,7 +155,8 @@ def to_utf(raw_img, pixelation):
     utf_string = ""
     for row in raw_img[::pixelation]:
         string_row = [int_to_char(pixel) for pixel in row[::pixelation]]
-        utf_string += "".join(string_row) + "\n"
+        doubled_row = "".join([char * 2 for char in string_row])
+        utf_string += doubled_row + "\n"
     return utf_string
 
 

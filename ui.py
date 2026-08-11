@@ -10,7 +10,8 @@ class ImageUi(tk.Tk):
     def __init__(self, width, height):
         super().__init__()
         super().title("UTF image generator")
-        super().resizable(False, False)
+        super().resizable(True, True)
+        super().geometry("800x600")
 
         self.url = None
         self.image = None
@@ -18,6 +19,8 @@ class ImageUi(tk.Tk):
         self.utf_string = None
         self.imageWidth = width
         self.imageHeight = height
+        self.original_pilImg = None
+        self.original_pixel_image = None
 
         self.canvas1 = tk.Canvas(self, width=width, height=height, bg="gray")
         self.canvas2 = tk.Canvas(self, width=width, height=height, bg="gray")
@@ -31,8 +34,8 @@ class ImageUi(tk.Tk):
             label="Set pixel size"
         )
 
-        self.canvas1.grid(row=0, column=0, columnspan=2)
-        self.canvas2.grid(row=0, column=2, columnspan=2)
+        self.canvas1.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW)
+        self.canvas2.grid(row=0, column=2, columnspan=2, sticky=tk.NSEW)
 
         self.slider.grid(row=1, column=1, sticky=tk.EW)
 
@@ -68,38 +71,70 @@ class ImageUi(tk.Tk):
             image=self.image
         )
 
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=1)
+
+        self.bind("<Configure>", self.on_resize)
+
+    def on_resize(self, event):
+        """Handle window resize to maintain image aspect ratios."""
+        width = event.width
+        height = event.height
+
+        canvas_width = (width - 4) // 2
+        canvas_height = height - 50
+
+        self.canvas1.config(width=canvas_width, height=canvas_height)
+        self.canvas2.config(width=canvas_width, height=canvas_height)
+
+        if self.original_pilImg is not None:
+            self.update_image_display()
+
+    def update_image_display(self):
+        """Update both canvas images with properly scaled versions."""
+        canvas_width = self.canvas1.winfo_width()
+        canvas_height = self.canvas1.winfo_height()
+
+        if canvas_width <= 0 or canvas_height <= 0:
+            return
+
+        if self.original_pilImg is not None:
+            img = self.original_pilImg.copy()
+            img.thumbnail((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+            self.image = ImageTk.PhotoImage(img)
+            self.canvas1.itemconfig(self.canvas1_img, image=self.image)
+
+        if self.original_pixel_image is not None:
+            img_array = self.original_pixel_image
+            img = Image.fromarray(img_array)
+            img.thumbnail((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+            self.pixel_image_display = ImageTk.PhotoImage(img)
+            self.canvas2.itemconfig(self.canvas2_img, image=self.pixel_image_display)
+
     def choose_image(self):
         """Open a file dialog and load the selected image."""
         img_path = get_img()
         if not img_path:
             return
-        self.pilImg = Image.open(img_path)
-        self.pilImg = self.pilImg.resize(
-            (self.imageWidth, self.imageHeight),
-            Image.Resampling.LANCZOS
-        )
-        self.image = ImageTk.PhotoImage(self.pilImg)
-        self.canvas1.itemconfig(self.canvas1_img, image=self.image)
+        self.original_pilImg = Image.open(img_path)
+        self.update_image_display()
 
     def set_image(self):
         """Update the canvas with the pixelated image."""
-        new_img = Image.fromarray(self.pixel_image)
-        new_img = new_img.resize(
-            (self.imageWidth, self.imageHeight),
-            Image.Resampling.LANCZOS
-        )
-        self.pixel_image = ImageTk.PhotoImage(new_img)
-        self.canvas2.itemconfig(self.canvas2_img, image=self.pixel_image)
+        self.update_image_display()
 
     def setup(self):
         """Process the image: pixelate and convert to UTF."""
-        if self.pilImg is None:
+        if self.original_pilImg is None:
             return
-        temp_img = np.asarray(self.pilImg.convert('L'))
+        temp_img = np.asarray(self.original_pilImg.convert('L'))
         pixel_size = int(self.slider.get())
-        self.pixel_image = pixelate(temp_img, pixel_size)
-        self.utf_string = to_utf(self.pixel_image, pixel_size)
-        self.set_image()
+        self.original_pixel_image = pixelate(temp_img, pixel_size)
+        self.utf_string = to_utf(self.original_pixel_image, pixel_size)
+        self.update_image_display()
 
 
 if __name__ == "__main__":
