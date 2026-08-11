@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from PIL import ImageTk, Image, ImageFilter
 from processing import get_img, add_to_clipboard, pixelate, to_utf
 import numpy as np
@@ -39,6 +40,13 @@ class ImageUi(tk.Tk):
 
         self.slider.grid(row=1, column=1, sticky=tk.EW)
 
+        self.pick_image_button = tk.Button(
+            self,
+            text="Choose image",
+            command=lambda: self.choose_image()
+        )
+        self.pick_image_button.grid(row=1, column=0, sticky=tk.NSEW)
+
         self.show_pixel_button = tk.Button(
             self,
             text="Pixelate",
@@ -53,13 +61,6 @@ class ImageUi(tk.Tk):
         )
         self.clipboard_button.grid(row=1, column=3, sticky=tk.NSEW)
 
-        self.pick_image_button = tk.Button(
-            self,
-            text="Choose image",
-            command=lambda: self.choose_image()
-        )
-        self.pick_image_button.grid(row=1, column=0, sticky=tk.NSEW)
-
         self.canvas1_img = self.canvas1.create_image(
             0, 0,
             anchor=tk.NW,
@@ -70,6 +71,15 @@ class ImageUi(tk.Tk):
             anchor=tk.NW,
             image=self.image
         )
+
+        self.progress = ttk.Progressbar(
+            self,
+            orient=tk.HORIZONTAL,
+            length=100,
+            mode='determinate'
+        )
+        self.progress.grid(row=2, column=1, columnspan=2, sticky=tk.EW, pady=(0, 5))
+        self.progress.grid_remove()
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -85,7 +95,7 @@ class ImageUi(tk.Tk):
         height = event.height
 
         canvas_width = (width - 4) // 2
-        canvas_height = height - 50
+        canvas_height = height - 80
 
         self.canvas1.config(width=canvas_width, height=canvas_height)
         self.canvas2.config(width=canvas_width, height=canvas_height)
@@ -126,15 +136,29 @@ class ImageUi(tk.Tk):
         """Update the canvas with the pixelated image."""
         self.update_image_display()
 
+    def update_progress(self, value):
+        """Update the progress bar value."""
+        self.progress['value'] = value
+        self.update_idletasks()
+
     def setup(self):
         """Process the image: pixelate and convert to UTF."""
         if self.original_pilImg is None:
             return
+        
+        self.progress.grid()
+        self.progress['value'] = 0
+        
         temp_img = np.asarray(self.original_pilImg.convert('L'))
         pixel_size = int(self.slider.get())
-        self.original_pixel_image = pixelate(temp_img, pixel_size)
+        
+        self.original_pixel_image = pixelate(temp_img, pixel_size, progress_callback=self.update_progress)
+        
         self.utf_string = to_utf(self.original_pixel_image, pixel_size)
         self.update_image_display()
+        
+        self.progress['value'] = 100
+        self.after(500, lambda: self.progress.grid_remove())
 
 
 if __name__ == "__main__":

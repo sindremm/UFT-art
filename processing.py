@@ -66,13 +66,14 @@ def set_value(pixel_img, pos, value):
     pixel_img[pos[0]][pos[1]] = value
 
 
-def pixelate(img, pixelation):
+def pixelate(img, pixelation, progress_callback=None):
     """
     Pixelate an image by averaging pixel values in square blocks.
 
     Args:
         img: Input grayscale image as numpy array
         pixelation: Size of the pixelation block
+        progress_callback: Optional function to call with progress percentage (0-100)
 
     Returns:
         Pixelated image as numpy array
@@ -84,11 +85,19 @@ def pixelate(img, pixelation):
     pixelated_img = np.zeros((new_height, new_width), np.uint8)
     value_img = np.zeros((new_height // pixelation, new_width // pixelation), np.uint8)
 
+    total_blocks = (new_height // pixelation) * (new_width // pixelation)
+    processed_blocks = 0
+
     for n in range(0, new_height, pixelation):
         for k in range(0, new_width, pixelation):
             avg = average_square(img, [n, k], pixelation)
             pixelated_img = set_square(pixelated_img, [n, k], pixelation, avg)
             set_value(value_img, [n // pixelation, k // pixelation], avg)
+            processed_blocks += 1
+            
+            if progress_callback is not None:
+                progress = int((processed_blocks / total_blocks) * 100)
+                progress_callback(progress)
     
     return pixelated_img
 
