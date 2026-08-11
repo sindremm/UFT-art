@@ -1,22 +1,19 @@
 # UTF art
-This program creates an ui that allows the user to transform images from their computer
+This program creates a UI that allows the user to transform images from their computer
 into UTF-8 strings and add the string into their clipboard for easy pasting.
 
 ## Requirements
-* easygui
 * numpy
-* OpenCV-python
-* pillow
-* pyperclip
-* tkinter
+* pillow (PIL)
+* tkinter (usually included with Python)
 
 ## How to use
 * Import and run the start_program function from main.py:
-````
-from utf_imaging.main import start_program
+```python
+from main import start_program
 
 start_program()
-````
+```
 
 This will make the application turn up on your screen (see Figure 1).
 * Click the "Choose image" button and select which image you want to use
